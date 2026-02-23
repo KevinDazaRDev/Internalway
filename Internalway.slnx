@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Internalway.Api/Internalway.Api.csproj" />
+  <Project Path="Internalway.Application/Internalway.Application.csproj" />
+  <Project Path="Internalway.Domain/Internalway.Domain.csproj" />
+  <Project Path="Internalway.Infrastructure/Internalway.Infrastructure.csproj" />
+</Solution>
