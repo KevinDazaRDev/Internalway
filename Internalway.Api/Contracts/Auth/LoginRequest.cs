@@ -1,4 +1,5 @@
 ﻿namespace Internalway.Api.Contracts.Auth
 {
-    public record LoginRequest(string Username, string Password);
+    public record RegisterRequest(string Email, string Password);
+    public record LoginRequest(string Email, string Password);
 }

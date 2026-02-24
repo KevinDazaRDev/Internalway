@@ -17,6 +17,7 @@ namespace Internalway.Infrastructure.Persistence
         public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
         public DbSet<Movement> Movements => Set<Movement>();
         public DbSet<MovementLine> MovementLines => Set<MovementLine>();
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

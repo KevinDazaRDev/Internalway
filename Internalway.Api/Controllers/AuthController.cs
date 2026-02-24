@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using BCrypt.Net;
 using Internalway.Api.Contracts.Auth;
 using Internalway.Api.Options;
+using Internalway.Domain.Entities;
+using Internalway.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,28 +22,54 @@ namespace Internalway.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly JwtOptions _jwtOptions;
-        private readonly IConfiguration _configuration;
+        private readonly InternalwayDbContext _db;
 
-        public AuthController(IOptions<JwtOptions> jwtOptions, IConfiguration configuration)
+        public AuthController(IOptions<JwtOptions> jwtOptions, InternalwayDbContext db)
         {
             _jwtOptions = jwtOptions.Value;
-            _configuration = configuration;
+            _db = db;
+        }
+
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+        {
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+            var exists = await _db.Users.AnyAsync(x => x.Email == normalizedEmail, cancellationToken);
+            if (exists)
+            {
+                return Conflict("Email already registered.");
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var user = new User
+            {
+                Email = normalizedEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            return CreatedAtAction(nameof(Login), new { }, new { user.Id, user.Email });
         }
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
-            var adminUser = _configuration["Auth:AdminUser"];
-            var adminPassword = _configuration["Auth:AdminPassword"];
-
-            if (string.IsNullOrWhiteSpace(adminUser) || string.IsNullOrWhiteSpace(adminPassword))
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+            var user = await _db.Users.FirstOrDefaultAsync(x => x.Email == normalizedEmail, cancellationToken);
+            if (user is null || !user.IsActive)
             {
-                return Problem("Auth admin credentials are not configured.", statusCode: 500);
+                return Unauthorized();
             }
 
-            if (!string.Equals(request.Username, adminUser, StringComparison.Ordinal) ||
-                !string.Equals(request.Password, adminPassword, StringComparison.Ordinal))
+            var valid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            if (!valid)
             {
                 return Unauthorized();
             }
@@ -47,7 +78,8 @@ namespace Internalway.Api.Controllers
             var key = Encoding.UTF8.GetBytes(_jwtOptions.Key);
             var claims = new List<Claim>
             {
-                new(ClaimTypes.Name, request.Username),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.Role, "Admin")
             };
 
