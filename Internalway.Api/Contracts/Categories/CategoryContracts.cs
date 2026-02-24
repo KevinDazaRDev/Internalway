@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Internalway.Api.Contracts.Categories
 {
@@ -13,16 +14,16 @@ namespace Internalway.Api.Contracts.Categories
     );
 
     public record CreateCategoryRequest(
-        long? ParentId,
-        string Name,
-        string Slug,
-        string? Description
+        [Range(1, long.MaxValue)] long? ParentId,
+        [Required, MaxLength(200)] string Name,
+        [Required, MaxLength(200)] string Slug,
+        [MaxLength(1000)] string? Description
     );
 
     public record UpdateCategoryRequest(
-        long? ParentId,
-        string Name,
-        string Slug,
-        string? Description
+        [Range(1, long.MaxValue)] long? ParentId,
+        [Required, MaxLength(200)] string Name,
+        [Required, MaxLength(200)] string Slug,
+        [MaxLength(1000)] string? Description
     );
 }

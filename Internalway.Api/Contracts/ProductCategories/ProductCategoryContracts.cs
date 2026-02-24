@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Internalway.Api.Contracts.ProductCategories
 {
@@ -9,7 +10,7 @@ namespace Internalway.Api.Contracts.ProductCategories
     );
 
     public record CreateProductCategoryRequest(
-        long ProductId,
-        long CategoryId
+        [Range(1, long.MaxValue)] long ProductId,
+        [Range(1, long.MaxValue)] long CategoryId
     );
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace Internalway.Api.Contracts.Brands
 {
@@ -12,14 +13,14 @@ namespace Internalway.Api.Contracts.Brands
     );
 
     public record CreateBrandRequest(
-        string Name,
-        string Slug,
-        string? Description
+        [Required, MaxLength(200)] string Name,
+        [Required, MaxLength(200)] string Slug,
+        [MaxLength(1000)] string? Description
     );
 
     public record UpdateBrandRequest(
-        string Name,
-        string Slug,
-        string? Description
+        [Required, MaxLength(200)] string Name,
+        [Required, MaxLength(200)] string Slug,
+        [MaxLength(1000)] string? Description
     );
 }
